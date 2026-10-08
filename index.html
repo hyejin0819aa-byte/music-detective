@@ -3,903 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 노래 탐정소 - 생활 속 노래 제목 찾기</title>
-    <!-- Tailwind CSS -->
+    <title>AI 노래 탐정소 🕵️‍♂️🎶</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts for Friendly Typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gothic+A1:wght@400;600;800&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        detective: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            500: '#0284c7',
-                            600: '#0369a1',
-                            700: '#035485',
-                            800: '#075985',
-                            amber: '#f59e0b',
-                            dark: '#0f172a'
-                        }
-                    },
-                    fontFamily: {
-                        gaegu: ['Gaegu', 'cursive', 'sans-serif'],
-                        main: ['Gothic A1', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body {
-            font-family: 'Gothic A1', sans-serif;
-            background-color: #f8fafc;
-            background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
-            background-size: 24px 24px;
-        }
-        .font-gaegu-title {
-            font-family: 'Gaegu', cursive;
-        }
-        .bouncy-hover {
-            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .bouncy-hover:hover {
-            transform: translateY(-3px) scale(1.02);
-        }
-        .pulse-rec {
-            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        /* Custom scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col items-center p-4 sm:p-6">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md border-b border-slate-800">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="resetSearchForm()">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-white text-xl shadow-md shadow-sky-900">
-                    <i class="fa-solid fa-magnifying-glass-audio"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl md:text-2xl font-black font-gaegu-title tracking-wide flex items-center gap-2">
-                        AI 노래 탐정소 <span class="bg-amber-400 text-slate-900 text-xs px-2 py-0.5 rounded-full font-extrabold font-main">초등 음악 맞춤형</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">어디서 들었더라? 기억나는 단서로 가사·노래 제목 찾기</p>
-                </div>
-            </div>
-
-            <!-- Action buttons -->
-            <div class="flex items-center space-x-2">
-                <button onclick="toggleApiKeyModal()" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 flex items-center gap-1.5 transition-all" title="API 키 설정">
-                    <i class="fa-solid fa-key text-amber-400"></i>
-                    <span class="hidden sm:inline">API 키</span>
-                </button>
-                <button onclick="toggleSavedModal()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-bookmark text-amber-400"></i>
-                    <span>내 수사 수첩</span>
-                    <span id="saved-count-badge" class="bg-amber-400 text-slate-900 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-extrabold">0</span>
-                </button>
-                <button onclick="resetSearchForm()" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1.5 transition-all" title="초기화">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span class="hidden sm:inline">새 수사</span>
-                </button>
-            </div>
+    <!-- Header -->
+    <header class="w-full max-w-2xl bg-white rounded-3xl p-6 shadow-xl border border-slate-200 mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-amber-500 flex items-center gap-2">
+                🕵️‍♂️ AI 노래 탐정소
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">가사, 흥얼거림, 들었던 장소로 기억 안 나는 노래를 찾아줄게!</p>
         </div>
     </header>
 
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
-
-        <!-- Banner Section -->
-        <div class="bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
-            <div class="absolute -right-8 -bottom-10 opacity-15 text-9xl pointer-events-none select-none">
-                <i class="fa-solid fa-compact-disc"></i>
-            </div>
-            <div class="max-w-3xl relative z-10">
-                <span class="inline-block bg-white/20 backdrop-blur-md text-sky-100 text-xs px-3 py-1 rounded-full font-bold mb-3">
-                    🔍 맴도는 노래 제목 추적 시스템
-                </span>
-                <h2 class="text-2xl md:text-3xl font-extrabold font-gaegu-title tracking-wide leading-snug">
-                    "가사가 정확히 생각 안 나도 괜찮아요!"
-                </h2>
-                <p class="mt-2 text-sky-100 text-xs md:text-sm leading-relaxed">
-                    흥얼거리는 소리(허밍), 얼핏 기억나는 노랫말, 들었던 장소(유튜브, TV광고, 게임, 마트)만 말해줘도 AI 탐정이 노래를 찾아드립니다.
-                </p>
-            </div>
+    <!-- Main Card -->
+    <main class="w-full max-w-2xl bg-white rounded-3xl p-6 shadow-xl border border-slate-200 space-y-6">
+        
+        <!-- Input 1: Lyrics / Humming -->
+        <div>
+            <label class="block font-bold text-sm text-slate-700 mb-2">
+                🎵 생각나는 가사나 음절 (허밍 소리)
+            </label>
+            <input type="text" id="input-clue" placeholder="예: 단단단 짠짠짠, 아기상어 바닷속, 뚜두뚜두" 
+                   class="w-full px-4 py-3 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm">
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- Left Column: Detective Input Panel -->
-            <div class="lg:col-span-7 space-y-6">
-                
-                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
-                    
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                            <i class="fa-solid fa-file-waveform text-sky-500"></i>
-                            수사 단서 입력하기
-                        </h3>
-                        <span class="text-xs text-slate-400">단서가 많을수록 더 명확하게 찾아내요</span>
-                    </div>
-
-                    <form id="search-form" onsubmit="handleSongSearch(event)" class="space-y-5">
-                        
-                        <!-- 1. Voice / Humming Section -->
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-[11px] flex items-center justify-center font-bold">1</span>
-                                    허밍 / 음성으로 단서 주기
-                                </label>
-                                <span class="text-[11px] text-sky-600 font-bold" id="humming-status-label">마이크 준비됨</span>
-                            </div>
-
-                            <!-- Audio Waveform Visualizer Canvas -->
-                            <div class="relative w-full h-16 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800">
-                                <canvas id="audio-visualizer-canvas" class="w-full h-full block"></canvas>
-                                <div id="visualizer-overlay-text" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium pointer-events-none text-center px-2">
-                                    '허밍/음성 녹음' 버튼을 누르고 음이나 노랫말을 불러보세요
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <button type="button" id="btn-record-hum" onclick="toggleHumRecording()" 
-                                        class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-microphone text-red-400" id="mic-icon-btn"></i>
-                                    <span id="mic-btn-text">허밍 / 음성 녹음 시작</span>
-                                </button>
-                                <button type="button" onclick="startSpeechToText()" 
-                                        class="px-3 py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5" title="말을 글로 변환">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                    <span>말하고 가사 적기</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 2. Text Lyrics / Phrase Input -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-[11px] flex items-center justify-center font-bold">2</span>
-                                기억나는 가사 또는 소리 음절
-                            </label>
-                            <input type="text" id="input-lyrics" 
-                                   placeholder="예: 뚜두뚜두 / 단단단 짠짠짠 / 내 손을 잡아 / 아기상어 바닷속" 
-                                   class="w-full px-4 py-3 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 text-xs md:text-sm outline-none transition-all">
-                        </div>
-
-                        <!-- 3. Where did you hear it? -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                                <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-[11px] flex items-center justify-center font-bold">3</span>
-                                어디서 들었던 노래인가요? (중복 선택 가능)
-                            </label>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                                <label class="cursor-pointer">
-                                    <input type="checkbox" name="context" value="유튜브 숏폼/릴스/틱톡 챌린지" class="peer hidden">
-                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-700 font-bold transition-all">
-                                        📱 숏폼/릴스/틱톡
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="checkbox" name="context" value="TV 광고/CF/식품 광고" class="peer hidden">
-                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-700 font-bold transition-all">
-                                        📺 TV 광고 / CF
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="checkbox" name="context" value="게임 BGM/메인 음악" class="peer hidden">
-                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-700 font-bold transition-all">
-                                        🎮 게임 음악 / BGM
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="checkbox" name="context" value="마트/가게/카페/길거리" class="peer hidden">
-                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-700 font-bold transition-all">
-                                        🛒 마트 / 가게 / 매장
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="checkbox" name="context" value="애니메이션/영화/드라마 OST" class="peer hidden">
-                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-700 font-bold transition-all">
-                                        🎬 애니 / 드라마 OST
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="checkbox" name="context" value="학교 교과서/음악시간/클래식" class="peer hidden">
-                                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:bg-sky-50 peer-checked:border-sky-500 peer-checked:text-sky-700 font-bold transition-all">
-                                        🏫 음악시간 / 클래식
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- 4. Mood & Fast/Slow Tags -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-[11px] flex items-center justify-center font-bold">4</span>
-                                노래의 빠르기와 분위기
-                            </label>
-                            <div class="flex flex-wrap gap-1.5 mb-2" id="vibe-tags-container">
-                                <button type="button" onclick="toggleVibeTag(this, '신나는 댄스곡')" class="vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100">⚡ 신나고 빠름</button>
-                                <button type="button" onclick="toggleVibeTag(this, '잔잔하고 감성적')" class="vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100">🌙 잔잔하고 피아노 소리</button>
-                                <button type="button" onclick="toggleVibeTag(this, '웅장하고 카리스마')" class="vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100">🎺 웅장한 관현악</button>
-                                <button type="button" onclick="toggleVibeTag(this, '귀엽고 중독성 있음')" class="vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100">🐥 귀엽고 중독성 최고</button>
-                                <button type="button" onclick="toggleVibeTag(this, '영어 가사/팝송')" class="vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100">🌐 팝송 / 영어 가사</button>
-                            </div>
-                            <input type="text" id="input-mood-detail" placeholder="추가로 설명하고 싶은 분위기를 자유롭게 적어보세요" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-sky-400">
-                        </div>
-
-                        <!-- Submit Investigation Button -->
-                        <button type="submit" id="btn-submit-search" 
-                                class="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-sky-200 flex items-center justify-center gap-2 text-sm md:text-base bouncy-hover">
-                            <i class="fa-solid fa-magnifying-glass-location text-lg"></i>
-                            <span>AI 탐정에게 노래 추적 시작하기</span>
-                        </button>
-                    </form>
-                </div>
-
+        <!-- Input 2: Place / Situation -->
+        <div>
+            <label class="block font-bold text-sm text-slate-700 mb-2">
+                📍 들었던 장소나 상황
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <button type="button" onclick="selectPlace('유튜브 숏폼/릴스')" class="place-btn p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold hover:bg-amber-100 hover:border-amber-300 transition">📱 숏폼 / 릴스</button>
+                <button type="button" onclick="selectPlace('TV 광고(CF)')" class="place-btn p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold hover:bg-amber-100 hover:border-amber-300 transition">📺 TV 광고</button>
+                <button type="button" onclick="selectPlace('게임 BGM')" class="place-btn p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold hover:bg-amber-100 hover:border-amber-300 transition">🎮 게임 음악</button>
+                <button type="button" onclick="selectPlace('마트 / 길거리')" class="place-btn p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold hover:bg-amber-100 hover:border-amber-300 transition">🛒 마트 / 매장</button>
             </div>
-
-            <!-- Right Column: Investigation Results Panel -->
-            <div class="lg:col-span-5 space-y-4">
-                
-                <div class="flex items-center justify-between px-1">
-                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-list text-indigo-500"></i>
-                        탐정 추적 결과
-                    </h3>
-                    <span id="result-status-tag" class="text-xs px-2.5 py-1 rounded-full bg-slate-200 text-slate-600 font-bold">
-                        단서 대기 중
-                    </span>
-                </div>
-
-                <!-- Results Output Container -->
-                <div id="results-container" class="space-y-4">
-                    
-                    <!-- Initial Welcome State -->
-                    <div class="bg-white rounded-3xl p-8 border border-slate-200 text-center text-slate-400 space-y-3 shadow-sm">
-                        <div class="w-16 h-16 bg-sky-50 text-sky-400 rounded-2xl flex items-center justify-center mx-auto text-3xl">
-                            <i class="fa-solid fa-drum"></i>
-                        </div>
-                        <p class="text-sm font-bold text-slate-700">
-                            단서를 입력 후 추적 버튼을 눌러주세요!
-                        </p>
-                        <p class="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-                            가사 단어 한 줄, 허밍 녹음, 또는 들었던 장소만 찍어주셔도 탐정이 훌륭하게 추정합니다.
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-
+            <input type="hidden" id="selected-place" value="">
         </div>
 
+        <!-- Search Button -->
+        <button onclick="searchSong()" class="w-full py-4 bg-amber-500 hover:bg-amber-600 active:scale-[0.99] text-white font-extrabold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-base">
+            🔍 노래 추적 시작하기
+        </button>
+
+        <!-- Result Section -->
+        <div id="result-box" class="hidden space-y-4 pt-4 border-t border-slate-100">
+            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                💡 탐정의 수사 결과
+            </h3>
+            <div id="result-content" class="space-y-3"></div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hidden text-center py-8">
+            <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-500 mb-2"></i>
+            <p class="text-xs text-slate-500 font-bold">기억 단서를 조합해 노래를 추적하는 중...</p>
+        </div>
     </main>
 
-    <!-- Saved Detective Journal Modal -->
-    <div id="saved-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
-            <div class="p-5 bg-slate-900 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-bookmark text-amber-400 text-lg"></i>
-                    <h3 class="font-bold text-base font-gaegu-title tracking-wide text-lg">내 수사 수첩 (찾은 노래 저장소)</h3>
-                </div>
-                <button onclick="toggleSavedModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <div id="saved-modal-list" class="p-5 flex-1 overflow-y-auto space-y-3">
-                <!-- Saved items rendered dynamically -->
-            </div>
-
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
-                <span>총 <b id="saved-total-text" class="text-sky-600">0</b>곡 저장됨</span>
-                <button onclick="clearAllSavedSongs()" class="text-red-500 hover:underline font-medium">전체 삭제</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- API Key Settings Modal -->
-    <div id="apikey-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-500 text-lg"></i>
-                    <h3 class="font-bold text-base text-slate-800">Google Gemini API 키 설정</h3>
-                </div>
-                <button onclick="toggleApiKeyModal()" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <p class="text-xs text-slate-600 leading-relaxed">
-                학생들에게 배포할 때 사용됩니다. 선생님께서 발급받은 무료 API 키를 등록하거나 <code>index.html</code> 파일 내부에 기입해 배포하세요.
-            </p>
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Gemini API Key</label>
-                <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:ring-2 focus:ring-amber-400">
-            </div>
-            <div class="bg-amber-50 rounded-xl p-3 border border-amber-200 text-[11px] text-amber-900">
-                💡 <b>무료 API 키 발급:</b> <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-bold text-amber-700">Google AI Studio</a>에서 1분 만에 생성할 수 있습니다.
-            </div>
-            <div class="flex justify-end gap-2 pt-2">
-                <button onclick="toggleApiKeyModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">취소</button>
-                <button onclick="saveApiKey()" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md">저장하기</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Global Toast Alert Message -->
-    <div id="toast-modal" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
-        <i class="fa-solid fa-circle-info text-sky-400 text-lg" id="toast-icon"></i>
-        <span id="toast-msg" class="text-xs font-bold">메세지</span>
-    </div>
-
     <script>
-        /* State Variables */
-        let isHumRecording = false;
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let speechRecognition = null;
-        let audioCtx = null;
-        let analyser = null;
-        let animFrameId = null;
-        let selectedVibeTags = [];
-        let savedSongs = JSON.parse(localStorage.getItem('detective_saved_songs') || '[]');
+        // API KEY SETTING
+        let rawKey = "AQ.Ab8RN6LuWEf49aiY5YIrpu0ijQNHzm0Ak_sMCr7gBT84I7pVSA"; 
+        let GEMINI_API_KEY = rawKey.startsWith("AIza") ? rawKey : "AIza" + rawKey;
 
-        // Gemini Model Configuration
-        let GEMINI_API_KEY = localStorage.getItem('detective_gemini_api_key') || "AQ.Ab8RN6LuWEf49aiY5YIrpu0ijQNHzm0Ak_sMCr7gBT84I7pVSA";
-        const GEMINI_MODEL = "gemini-2.5-flash";
-
-        function getActiveApiKey() {
-            return localStorage.getItem('detective_gemini_api_key') || GEMINI_API_KEY;
+        function selectPlace(place) {
+            document.querySelectorAll('.place-btn').forEach(btn => btn.classList.remove('bg-amber-200', 'border-amber-400'));
+            event.target.classList.add('bg-amber-200', 'border-amber-400');
+            document.getElementById('selected-place').value = place;
         }
 
-        function showToast(msg, iconClass = "fa-circle-info text-sky-400") {
-            const toast = document.getElementById('toast-modal');
-            const toastMsg = document.getElementById('toast-msg');
-            const toastIcon = document.getElementById('toast-icon');
+        async function searchSong() {
+            const clue = document.getElementById('input-clue').value.trim();
+            const place = document.getElementById('selected-place').value;
 
-            toastMsg.textContent = msg;
-            toastIcon.className = `fa-solid ${iconClass} text-lg`;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-
-        function toggleApiKeyModal() {
-            const modal = document.getElementById('apikey-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                document.getElementById('input-api-key').value = getActiveApiKey();
-            }
-        }
-
-        function saveApiKey() {
-            const keyVal = document.getElementById('input-api-key').value.trim();
-            localStorage.setItem('detective_gemini_api_key', keyVal);
-            GEMINI_API_KEY = keyVal;
-            toggleApiKeyModal();
-            showToast("API 키가 성공적으로 저장되었습니다!", "fa-circle-check text-emerald-400");
-        }
-
-        function toggleVibeTag(btn, tag) {
-            if (selectedVibeTags.includes(tag)) {
-                selectedVibeTags = selectedVibeTags.filter(t => t !== tag);
-                btn.className = "vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100";
-            } else {
-                selectedVibeTags.push(tag);
-                btn.className = "vibe-tag px-3 py-1 rounded-full border border-sky-400 bg-sky-50 text-xs font-bold text-sky-700";
-            }
-        }
-
-        function resetSearchForm() {
-            document.getElementById('search-form').reset();
-            selectedVibeTags = [];
-            document.querySelectorAll('.vibe-tag').forEach(btn => {
-                btn.className = "vibe-tag px-3 py-1 rounded-full border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-100";
-            });
-            document.getElementById('results-container').innerHTML = `
-                <div class="bg-white rounded-3xl p-8 border border-slate-200 text-center text-slate-400 space-y-3 shadow-sm">
-                    <div class="w-16 h-16 bg-sky-50 text-sky-400 rounded-2xl flex items-center justify-center mx-auto text-3xl">
-                        <i class="fa-solid fa-drum"></i>
-                    </div>
-                    <p class="text-sm font-bold text-slate-700">
-                        단서를 입력 후 추적 버튼을 눌러주세요!
-                    </p>
-                    <p class="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-                        가사 단어 한 줄, 허밍 녹음, 또는 들었던 장소만 찍어주셔도 탐정이 훌륭하게 추정합니다.
-                    </p>
-                </div>
-            `;
-            document.getElementById('result-status-tag').textContent = "단서 대기 중";
-            document.getElementById('result-status-tag').className = "text-xs px-2.5 py-1 rounded-full bg-slate-200 text-slate-600 font-bold";
-            showToast("수사 양식이 초기화되었습니다.");
-        }
-
-        async function toggleHumRecording() {
-            const statusLabel = document.getElementById('humming-status-label');
-            const overlayText = document.getElementById('visualizer-overlay-text');
-            const micIconBtn = document.getElementById('mic-icon-btn');
-            const micBtnText = document.getElementById('mic-btn-text');
-
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showToast("마이크 접근을 위해 HTTPS 보안 연결이 필요합니다.", "fa-triangle-exclamation text-amber-400");
+            if (!clue && !place) {
+                alert('가사나 음절, 또는 들었던 장소를 하나 이상 선택해 주세요!');
                 return;
             }
 
-            if (!isHumRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioCtx.createMediaStreamSource(stream);
-                    analyser = audioCtx.createAnalyser();
-                    analyser.fftSize = 64;
-                    source.connect(analyser);
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result-box').classList.add('hidden');
 
-                    drawVisualizer();
+            const prompt = `초등학교 5학년 학생이 생각나는 가사나 소리, 들었던 장소를 바탕으로 기억 안 나는 노래를 찾고 있습니다.
+단서:
+- 가사/소리: "${clue}"
+- 들었던 장소/상황: "${place}"
 
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-
-                    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-                    mediaRecorder.onstop = () => {
-                        cancelAnimationFrame(animFrameId);
-                        clearCanvas();
-                    };
-
-                    mediaRecorder.start();
-                    isHumRecording = true;
-
-                    statusLabel.textContent = "🎙️ 녹음 중...";
-                    statusLabel.className = "text-xs text-red-500 font-bold animate-pulse";
-                    overlayText.classList.add('hidden');
-                    
-                    micIconBtn.className = "fa-solid fa-square text-red-400 animate-pulse";
-                    micBtnText.textContent = "녹음 중지하기 (5초 제한)";
-
-                    setTimeout(() => {
-                        if (isHumRecording) toggleHumRecording();
-                    }, 5000);
-
-                } catch (err) {
-                    showToast("마이크 권한이 거부되었거나 장치를 찾을 수 없습니다.", "fa-triangle-exclamation text-amber-400");
-                }
-            } else {
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                isHumRecording = false;
-
-                statusLabel.textContent = "✅ 녹음 완료";
-                statusLabel.className = "text-xs text-emerald-600 font-bold";
-                overlayText.classList.remove('hidden');
-                overlayText.textContent = "소리가 수사 단서에 반영되었습니다!";
-
-                micIconBtn.className = "fa-solid fa-microphone text-red-400";
-                micBtnText.textContent = "허밍 / 음성 다시 녹음";
-
-                showToast("음성 단서가 수사관에 전달되었습니다!", "fa-circle-check text-emerald-400");
-            }
-        }
-
-        function drawVisualizer() {
-            const canvas = document.getElementById('audio-visualizer-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function renderFrame() {
-                animFrameId = requestAnimationFrame(renderFrame);
-                analyser.getByteFrequencyData(dataArray);
-
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                const barWidth = (canvas.width / bufferLength) * 2;
-                let barHeight;
-                let x = 0;
-
-                for (let i = 0; i < bufferLength; i++) {
-                    barHeight = dataArray[i] / 2;
-                    ctx.fillStyle = `rgb(56, 189, 248)`;
-                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                    x += barWidth + 2;
-                }
-            }
-            renderFrame();
-        }
-
-        function clearCanvas() {
-            const canvas = document.getElementById('audio-visualizer-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function startSpeechToText() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                showToast("현재 브라우저는 음성 텍스트 변환을 지원하지 않습니다.", "fa-triangle-exclamation text-amber-400");
-                return;
-            }
-
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            speechRecognition = new SpeechRec();
-            speechRecognition.lang = 'ko-KR';
-            speechRecognition.interimResults = false;
-
-            showToast("말씀해 주세요! 음성을 가사 입력창에 적습니다.", "fa-microphone text-red-400");
-
-            speechRecognition.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                const lyricsInput = document.getElementById('input-lyrics');
-                lyricsInput.value = (lyricsInput.value + " " + text).trim();
-                showToast(`인식됨: "${text}"`, "fa-circle-check text-emerald-400");
-            };
-
-            speechRecognition.onerror = () => {
-                showToast("음성을 제대로 듣지 못했습니다. 다시 시도해주세요.", "fa-circle-xmark text-red-400");
-            };
-
-            speechRecognition.start();
-        }
-
-        async function handleSongSearch(event) {
-            event.preventDefault();
-
-            const currentKey = getActiveApiKey();
-            if (!currentKey) {
-                toggleApiKeyModal();
-                showToast("Gemini API 키 등록이 필요합니다.", "fa-key text-amber-400");
-                return;
-            }
-
-            const lyricsInput = document.getElementById('input-lyrics').value.trim();
-            const moodDetail = document.getElementById('input-mood-detail').value.trim();
-            
-            const contextBoxes = document.querySelectorAll('input[name="context"]:checked');
-            const selectedContexts = Array.from(contextBoxes).map(cb => cb.value).join(', ');
-            const selectedVibeStr = selectedVibeTags.join(', ');
-
-            if (!lyricsInput && !moodDetail && !selectedContexts && selectedVibeTags.length === 0) {
-                showToast("최소 한 가지 이상 기억나는 단서를 입력해 주세요!", "fa-triangle-exclamation text-amber-400");
-                return;
-            }
-
-            const container = document.getElementById('results-container');
-            const statusTag = document.getElementById('result-status-tag');
-
-            statusTag.textContent = "AI 탐정 수사 중...";
-            statusTag.className = "text-xs px-2.5 py-1 rounded-full bg-sky-100 text-sky-700 font-bold animate-pulse";
-
-            container.innerHTML = `
-                <div class="bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-4 shadow-sm">
-                    <div class="w-14 h-14 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-2xl animate-spin">
-                        <i class="fa-solid fa-compass-drafting"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 text-base">단서와 매칭되는 노래를 추적 중...</h4>
-                        <p class="text-xs text-slate-400 mt-1">광고 음악, K-POP, 숏폼, 클래식, 팝송 종합 검색 중</p>
-                    </div>
-                </div>
-            `;
-
-            const promptText = `
-너는 초등학생이 생활 속에서 얼핏 들은 노래를 찾아주는 전문 'AI 음악 탐정'이다.
-학생이 제출한 수사 단서:
-- 기억나는 가사/소리: "${lyricsInput || '단서 없음'}"
-- 들었던 장소/매체: "${selectedContexts || '단서 없음'}"
-- 분위기 및 속도: "${selectedVibeStr || '없음'} / ${moodDetail || '없음'}"
-
-위 단서를 종합 분석하여 가장 매칭 확률이 높은 대표적인 곡 3개 후보를 추정해줘.
-반드시 아래 JSON 형식으로만 응답해줘:
-
-{
-  "detectiveSummary": "학생의 단서를 분석한 탐정의 따뜻한 분석 요약 한마디",
-  "songs": [
-    {
-      "title": "노래 제목",
-      "artist": "가수 또는 작곡가",
-      "category": "장르/카테고리 (예: TV 광고 음악, 릴스 챌린지, K-POP, 클래식 명곡)",
-      "matchScore": 95,
-      "matchedLyric": "기억나는 소리와 연관된 실제 노래 가사 구절",
-      "heardWhere": "실제로 이 노래가 어디서 자주 나오는지 초등학생 수준의 상세한 설명",
-      "detectiveTip": "이 곡을 단서로 확신하는 탐정의 이유"
-    }
-  ]
-}
-`;
+가능성이 높은 노래 3곡을 추천해 주세요.
+각 노래별로 [곡 제목 - 가수], [매칭되는 부분 가사], [이 음악이 자주 쓰이는 이유/특징]을 초등학생 눈높이에 맞춰 친절하게 설명해 주세요.`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${currentKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: {
-                            responseMimeType: "application/json"
-                        }
+                        contents: [{ parts: [{ text: prompt }] }]
                     })
                 });
 
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    const errMsg = errData.error?.message || `HTTP 오류 (${response.status})`;
-                    throw new Error(errMsg);
-                }
-
                 const data = await response.json();
-                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-                let jsonStr = rawText.trim();
-                jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
                 
-                let parsedResult;
-                try {
-                    parsedResult = JSON.parse(jsonStr);
-                } catch (e) {
-                    const match = jsonStr.match(/\{[\s\S]*\}/);
-                    if (match) {
-                        parsedResult = JSON.parse(match[0]);
-                    } else {
-                        throw new Error("결과 해석 중 오류가 발생했습니다.");
-                    }
+                if (data.error) {
+                    throw new Error(data.error.message);
                 }
 
-                if (parsedResult && parsedResult.songs && parsedResult.songs.length > 0) {
-                    renderSearchResults(parsedResult);
-                    statusTag.textContent = "수사 완료";
-                    statusTag.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold";
-                } else {
-                    throw new Error("일치하는 노래 단서를 찾지 못했습니다.");
-                }
-
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                container.innerHTML = `
-                    <div class="bg-red-50 rounded-3xl p-6 border border-red-200 text-center space-y-3">
-                        <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl"></i>
-                        <h4 class="font-bold text-red-800 text-sm">노래 탐색 중 오류가 발생했습니다.</h4>
-                        <p class="text-xs text-red-600 font-medium">${error.message || '단서를 조금 더 구체적으로 입력해 보세요.'}</p>
-                        <div class="pt-2">
-                            <button onclick="toggleApiKeyModal()" class="px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold">API 키 재확인하기</button>
-                        </div>
+                const resultText = data.candidates[0].content.parts[0].text;
+                document.getElementById('result-content').innerHTML = `
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
+                        ${resultText}
                     </div>
                 `;
-                statusTag.textContent = "수사 실패";
-                statusTag.className = "text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-bold";
+                document.getElementById('result-box').classList.remove('hidden');
+            } catch (err) {
+                alert('노래를 찾는 중 오류가 발생했습니다. API 키를 확인해 주세요.');
+                console.error(err);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
             }
         }
-
-        function renderSearchResults(data) {
-            const container = document.getElementById('results-container');
-            container.innerHTML = '';
-
-            // Detective Note
-            if (data.detectiveSummary) {
-                const summaryCard = document.createElement('div');
-                summaryCard.className = "bg-sky-50/80 rounded-2xl p-4 border border-sky-200 text-xs text-sky-950 flex items-start gap-3 shadow-sm";
-                summaryCard.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center text-sm shrink-0 font-bold">🕵️‍♂️</div>
-                    <div>
-                        <span class="font-bold text-sky-900 block">탐정 단서 분석 결과:</span>
-                        <p class="mt-0.5 leading-relaxed text-slate-700">${data.detectiveSummary}</p>
-                    </div>
-                `;
-                container.appendChild(summaryCard);
-            }
-
-            // Render each song card
-            data.songs.forEach((song) => {
-                const isSaved = savedSongs.some(s => s.title === song.title);
-                const safeTitle = (song.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const safeArtist = (song.artist || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                
-                const card = document.createElement('div');
-                card.className = "bg-white rounded-3xl p-5 border border-slate-200 hover:border-sky-300 shadow-sm transition-all bouncy-hover space-y-3 relative overflow-hidden";
-                
-                card.innerHTML = `
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-100 text-sky-700">
-                                    ${song.category || '생활 속 음악'}
-                                </span>
-                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
-                                    일치율 ${song.matchScore || 90}%
-                                </span>
-                            </div>
-                            <h4 class="text-lg font-extrabold text-slate-800 mt-1.5">${song.title}</h4>
-                            <p class="text-xs font-semibold text-slate-500">${song.artist}</p>
-                        </div>
-                        <button onclick="playMelodySynth('${safeTitle}')" title="샘플 멜로디 연주"
-                                class="w-11 h-11 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex flex-col items-center justify-center shrink-0 transition-colors">
-                            <i class="fa-solid fa-play text-sm"></i>
-                            <span class="text-[9px] font-bold mt-0.5">멜로디</span>
-                        </button>
-                    </div>
-
-                    <div class="bg-slate-50 rounded-2xl p-3.5 text-xs space-y-2 border border-slate-100">
-                        <p class="text-slate-700">
-                            <span class="font-bold text-sky-600">🎵 매칭 가사:</span> "${song.matchedLyric || '가사 구절'}"
-                        </p>
-                        <p class="text-slate-600">
-                            <span class="font-bold text-slate-500">📍 출처/상황:</span> ${song.heardWhere || '생활 속 배경음악'}
-                        </p>
-                        <p class="text-slate-500 text-[11px] italic">
-                            💡 ${song.detectiveTip || '탐정 단서 연관 곡입니다.'}
-                        </p>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-1 gap-2">
-                        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + song.artist)}" target="_blank" 
-                           class="text-xs text-red-500 hover:text-red-600 font-bold flex items-center gap-1">
-                            <i class="fa-brands fa-youtube text-base"></i>
-                            <span>유튜브 원곡 듣기</span>
-                        </a>
-
-                        <button onclick="toggleSaveSong('${safeTitle}', '${safeArtist}', '${song.category}')" 
-                                class="px-3.5 py-1.5 rounded-xl ${isSaved ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'} text-xs font-bold transition-all flex items-center gap-1">
-                            <i class="fa-solid fa-bookmark ${isSaved ? 'text-amber-500' : 'text-slate-400'}"></i>
-                            <span>${isSaved ? '저장됨' : '수첩에 저장'}</span>
-                        </button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function playMelodySynth(songTitle) {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const ctx = new AudioContext();
-
-                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; 
-                notes.forEach((freq, idx) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-
-                    const startTime = ctx.currentTime + idx * 0.12;
-                    gain.gain.setValueAtTime(0.15, startTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.35);
-
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-
-                    osc.start(startTime);
-                    osc.stop(startTime + 0.35);
-                });
-
-                showToast(`"${songTitle}" 대표 멜로디 재생 중 🎶`, "fa-music text-sky-400");
-            } catch (e) {
-                console.log("Audio synth play error:", e);
-            }
-        }
-
-        function toggleSaveSong(title, artist, category) {
-            const index = savedSongs.findIndex(s => s.title === title);
-            if (index >= 0) {
-                savedSongs.splice(index, 1);
-                showToast(`'${title}' 곡을 수사 수첩에서 제외했습니다.`);
-            } else {
-                savedSongs.push({ title, artist, category, date: new Date().toLocaleDateString('ko-KR') });
-                showToast(`'${title}' 곡을 수사 수첩에 저장했습니다!`, "fa-bookmark text-amber-400");
-            }
-
-            localStorage.setItem('detective_saved_songs', JSON.stringify(savedSongs));
-            updateSavedBadge();
-            renderSavedModalList();
-        }
-
-        function updateSavedBadge() {
-            const badge = document.getElementById('saved-count-badge');
-            badge.textContent = savedSongs.length;
-        }
-
-        function toggleSavedModal() {
-            const modal = document.getElementById('saved-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                renderSavedModalList();
-            }
-        }
-
-        function renderSavedModalList() {
-            const listEl = document.getElementById('saved-modal-list');
-            const totalText = document.getElementById('saved-total-text');
-            totalText.textContent = savedSongs.length;
-
-            if (savedSongs.length === 0) {
-                listEl.innerHTML = `
-                    <div class="text-center py-8 text-slate-400 text-xs space-y-2">
-                        <i class="fa-solid fa-book-open text-3xl text-slate-300"></i>
-                        <p>아직 저장된 노래가 없습니다.</p>
-                        <p class="text-[11px] text-slate-400">마음에 드는 노래의 '수첩에 저장' 버튼을 눌러보세요.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            listEl.innerHTML = savedSongs.map((song) => {
-                const safeTitle = (song.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                return `
-                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 text-xs">
-                        <div>
-                            <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded">${song.category || '노래'}</span>
-                            <h4 class="font-extrabold text-slate-800 text-sm mt-0.5">${song.title}</h4>
-                            <p class="text-slate-500 font-medium text-[11px]">${song.artist}</p>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + song.artist)}" target="_blank" 
-                               class="w-8 h-8 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center text-xs">
-                                <i class="fa-brands fa-youtube"></i>
-                            </a>
-                            <button onclick="toggleSaveSong('${safeTitle}', '', '')" 
-                                    class="w-8 h-8 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center text-xs">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function clearAllSavedSongs() {
-            if (savedSongs.length === 0) return;
-            savedSongs = [];
-            localStorage.setItem('detective_saved_songs', JSON.stringify(savedSongs));
-            updateSavedBadge();
-            renderSavedModalList();
-            showToast("수사 수첩을 모두 비웠습니다.");
-        }
-
-        /* Initial Setup */
-        window.onload = function() {
-            updateSavedBadge();
-        };
     </script>
 </body>
 </html>
